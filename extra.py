@@ -37,35 +37,31 @@ label_encoders = {}  # Dictionary to store label encoders
 
 for col in object_cols:
     le = LabelEncoder()
-    # Fit label encoder on train data and transform both train and test data
     X_train[col] = le.fit_transform(X_train[col].astype(str))
-    # Handle unseen categories in test data by assigning them 'Unknown'
     X_test[col] = X_test[col].astype(str).apply(lambda x: x if x in le.classes_ else 'Unknown')
-    le.classes_ = np.append(le.classes_, 'Unknown')  # Add 'Unknown' class for unseen categories in test
+    le.classes_ = np.append(le.classes_, 'Unknown')  
     X_test[col] = le.transform(X_test[col])
-    label_encoders[col] = le  # Store the encoder for possible future use
+    label_encoders[col] = le  
 
 # 5. XGBoost Model Training with Cross-Validation
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-oof_preds = np.zeros(X_train.shape[0])  # Out-of-fold predictions
-test_preds = np.zeros(X_test.shape[0])  # Test set predictions
+oof_preds = np.zeros(X_train.shape[0])  
+test_preds = np.zeros(X_test.shape[0])  
 
 # Initialize the XGBoost model
 model = xgb.XGBClassifier(
-    objective='binary:logistic',  # Set the objective for binary classification
-    scale_pos_weight=2,  # Adjust for imbalanced data (fraud detection)
-    learning_rate=0.03,  # Further lower learning rate for better control
-    n_estimators=1500,  # Increase the number of boosting rounds (trees) since we lowered learning_rate
-    max_depth=12,  # Depth of the trees, allowing the model to capture more complex relationships
-    min_child_weight=5,  # Minimum child weight to avoid overfitting
-    subsample=0.8,  # Fraction of samples used for each boosting round
-    colsample_bytree=0.8,  # Fraction of features used for each tree
-    gamma=0.1,  # Minimum loss reduction for a split
-    reg_alpha=0.1,  # L1 regularization to help prevent overfitting
-    reg_lambda=1.0,  # L2 regularization to help prevent overfitting
+    objective='binary:logistic',  
+    scale_pos_weight=2,  
+    learning_rate=0.05,  
+    n_estimators=1000,  
+    max_depth=10,  
+    min_child_weight=5,  
+    subsample=0.8,  
+    colsample_bytree=0.8,  
+    gamma=0.1,  
     random_state=42,
     use_label_encoder=False,
-    eval_metric='logloss'  # Use logloss for evaluation
+    eval_metric='logloss'  
 )
 # Train the model using StratifiedKFold cross-validation
 for fold, (train_idx, val_idx) in enumerate(skf.split(X_train, y_train)):
